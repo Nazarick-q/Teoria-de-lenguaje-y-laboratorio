@@ -1,21 +1,17 @@
 /*
- * TALLER INTEGRADOR: VALIDADOR DE EXPRESIONES MATEMÁTICAS AVANZADAS
- * Teoría de Lenguajes y Laboratorio - Docente: Luz Andrea Páez Martínez
+ * TALLER INTEGRADOR: VALIDADOR DE EXPRESIONES MATEMATICAS AVANZADAS
+ * Teoria de Lenguajes y Laboratorio - Docente: Luz Andrea Paez Martinez
  *
- * El programa aplica tres niveles de validación en cascada:
- *   1) Expresiones Regulares  -> ¿los caracteres usados son válidos?
- *   2) Autómata de Pila       -> ¿los símbolos de agrupación están balanceados?
- *   3) Análisis estructural   -> ¿la secuencia de números/operadores tiene sentido?
- *
- * Compilar:  g++ -std=c++17 -Wall -o validador validador.cpp
- * Ejecutar:  ./validador
+ * El programa aplica tres niveles de validacion en cascada:
+ *   1) Expresiones Regulares  -> los caracteres usados son validos?
+ *   2) Automata de Pila       -> los simbolos de agrupacion estan balanceados?
+ *   3) Analisis estructural   -> la secuencia de numeros/operadores tiene sentido?
  */
 
 #include <iostream>
 #include <string>
 #include <regex>
 #include <stack>
-#include <vector>
 #include <cctype>
 
 using namespace std;
@@ -24,26 +20,22 @@ using namespace std;
 //  ESTRUCTURAS DE APOYO
 // ============================================================
 
-// Resultado genérico de una validación, con la información
-// que la empresa pidió mostrar cuando algo falla.
+// Resultado generico de una validacion, con la informacion
+// que la empresa pidio mostrar cuando algo falla.
 struct ResultadoValidacion {
     bool valido = true;
     string tipoError;
     string simboloEncontrado;
     string simboloEsperado;
-    int posicion = -1; // 1-based, tal como en el ejemplo del taller
+    int posicion = -1; // 1-based
 };
 
+// Representa el "tipo" del ultimo simbolo significativo ya procesado,
+// que actua como estado del automata al recorrer la expresion.
 enum class TipoToken { NUMERO, OPERADOR, APERTURA, CIERRE };
 
-struct Token {
-    TipoToken tipo;
-    string valor;
-    int posicion; // posición (1-based) del primer carácter del token
-};
-
 // ============================================================
-//  FUNCIONES BÁSICAS DE CLASIFICACIÓN DE CARACTERES
+//  FUNCIONES BASICAS DE CLASIFICACION DE CARACTERES
 // ============================================================
 
 bool esNumero(char caracter) {
@@ -66,14 +58,14 @@ bool esEspacio(char caracter) {
     return caracter == ' ' || caracter == '\t';
 }
 
-// Indica si un símbolo de apertura corresponde al símbolo de cierre dado.
+// Indica si un simbolo de apertura corresponde al simbolo de cierre dado.
 bool coinciden(char apertura, char cierre) {
     return (apertura == '(' && cierre == ')') ||
            (apertura == '[' && cierre == ']') ||
            (apertura == '{' && cierre == '}');
 }
 
-// Devuelve el carácter de cierre que le correspondería a una apertura.
+// Devuelve el caracter de cierre que le corresponderia a una apertura.
 char cierreEsperado(char apertura) {
     if (apertura == '(') return ')';
     if (apertura == '[') return ']';
@@ -82,21 +74,21 @@ char cierreEsperado(char apertura) {
 }
 
 // ============================================================
-//  NIVEL 1: VALIDACIÓN CON EXPRESIONES REGULARES
+//  NIVEL 1: VALIDACION CON EXPRESIONES REGULARES
 // ============================================================
-// Se apoya en una expresión regular para reconocer el conjunto de
-// caracteres permitido: dígitos, operadores, símbolos de agrupación
-// y espacios. Si la expresión completa no calza con el patrón,
-// se recorre carácter a carácter para reportar el primer símbolo
-// no permitido y su posición.
+// Se apoya en una expresion regular para reconocer el conjunto de
+// caracteres permitido: digitos, operadores, simbolos de agrupacion
+// y espacios. Si la expresion completa no calza con el patron,
+// se recorre caracter a caracter para reportar el primer simbolo
+// no permitido y su posicion.
 
 ResultadoValidacion validarCaracteres(const string& expresion) {
     ResultadoValidacion resultado;
 
-    // Patrón: uno o más caracteres pertenecientes al conjunto permitido.
-    // Nota: el '-' se coloca al final de la clase de caracteres (ahí es
+    // Patron: uno o mas caracteres pertenecientes al conjunto permitido.
+    // Nota: el '-' se coloca al final de la clase de caracteres (ahi es
     // siempre literal) para evitar el error "Invalid range in bracket
-    // expression" que lanza la implementación de <regex> de MSVC cuando
+    // expression" que lanza la implementacion de <regex> de MSVC cuando
     // se escapa con '\-' dentro de la clase.
     static const regex patronValido(R"(^[0-9+*/\(\)\[\]\{\}\s-]*$)");
 
@@ -105,7 +97,7 @@ ResultadoValidacion validarCaracteres(const string& expresion) {
         return resultado;
     }
 
-    // La expresión completa no es válida: buscamos el primer carácter
+    // La expresion completa no es valida: buscamos el primer caracter
     // que no pertenezca al conjunto permitido para reportarlo.
     for (size_t i = 0; i < expresion.size(); ++i) {
         char c = expresion[i];
@@ -121,18 +113,18 @@ ResultadoValidacion validarCaracteres(const string& expresion) {
         }
     }
 
-    // No debería llegar aquí, pero por seguridad:
+    // No deberia llegar aqui, pero por seguridad:
     resultado.valido = false;
     resultado.tipoError = "Caracter no permitido";
     return resultado;
 }
 
 // ============================================================
-//  NIVEL 2: VALIDACIÓN CON AUTÓMATA DE PILA (balanceo de símbolos)
+//  NIVEL 2: VALIDACION CON AUTOMATA DE PILA (balanceo de simbolos)
 // ============================================================
-// Simula el comportamiento de un autómata de pila: apila cada símbolo
+// Simula el comportamiento de un automata de pila: apila cada simbolo
 // de apertura y, al encontrar un cierre, verifica que corresponda con
-// el tope de la pila. Al final la pila debe quedar vacía.
+// el tope de la pila. Al final la pila debe quedar vacia.
 
 ResultadoValidacion validarBalanceo(const string& expresion) {
     ResultadoValidacion resultado;
@@ -166,7 +158,7 @@ ResultadoValidacion validarBalanceo(const string& expresion) {
             }
             pila.pop();
         }
-        // números, operadores y espacios no afectan la pila
+        // numeros, operadores y espacios no afectan la pila
     }
 
     if (!pila.empty()) {
@@ -187,13 +179,34 @@ ResultadoValidacion validarBalanceo(const string& expresion) {
 }
 
 // ============================================================
-//  TOKENIZADOR (usado por la validación estructural)
+//  NIVEL 3: VALIDACION DE LA ESTRUCTURA MATEMATICA
 // ============================================================
-// Agrupa dígitos consecutivos en un solo token NUMERO y clasifica
-// el resto de caracteres no-espacio como OPERADOR, APERTURA o CIERRE.
+// A diferencia de los niveles anteriores, aqui NO se construye una
+// lista de tokens: se recorre la expresion una sola vez, caracter a
+// caracter, guardando en una variable de estado el "tipo" del ultimo
+// simbolo significativo visto (numero, operador, apertura o cierre).
+// Esa variable de estado hace las veces de automata: en cada paso,
+// el tipo anterior + el caracter actual determinan si la transicion
+// es valida o si se rechaza la expresion.
+//
+// Detecta:
+//   - dos operadores consecutivos
+//   - un operador al inicio
+//   - un operador al final
+//   - dos numeros consecutivos sin operador
+//   - un cierre inesperado o un grupo vacio
+// Excepcion (multiplicacion implicita, aceptada como si hubiera "*"):
+//   numero+apertura ("12(3)"), cierre+numero ("(3)12") y
+//   cierre+apertura ("(12)(21)").
 
-vector<Token> tokenizar(const string& expresion) {
-    vector<Token> tokens;
+ResultadoValidacion validarEstructura(const string& expresion) {
+    ResultadoValidacion resultado;
+
+    bool hayAnterior = false;      // ya vimos algun simbolo significativo?
+    TipoToken anterior{};          // tipo del ultimo simbolo significativo
+    string ultimoValor;            // texto del ultimo simbolo (para el error final)
+    int ultimaPosicion = 0;        // posicion 1-based del ultimo simbolo
+
     size_t i = 0;
     size_t n = expresion.size();
 
@@ -205,61 +218,96 @@ vector<Token> tokenizar(const string& expresion) {
             continue;
         }
 
+        int posActual = static_cast<int>(i) + 1; // 1-based
+
         if (esNumero(c)) {
+            // Agrupamos todos los digitos consecutivos: son un solo numero.
             size_t inicio = i;
-            string numero;
-            while (i < n && esNumero(expresion[i])) {
-                numero += expresion[i];
-                ++i;
+            while (i < n && esNumero(expresion[i])) ++i;
+            string valor = expresion.substr(inicio, i - inicio);
+
+            if (hayAnterior && (anterior == TipoToken::NUMERO || anterior == TipoToken::CIERRE)) {
+                if (anterior == TipoToken::NUMERO) {
+                    // "25 8": dos numeros pegados sin operador -> invalido.
+                    resultado.valido = false;
+                    resultado.tipoError = "Dos numeros consecutivos sin operador";
+                    resultado.simboloEncontrado = valor;
+                    resultado.simboloEsperado = "un operador (+ - * /)";
+                    resultado.posicion = posActual;
+                    return resultado;
+                }
+                // anterior == CIERRE: multiplicacion implicita ")3" -> valido.
             }
-            tokens.push_back({TipoToken::NUMERO, numero, static_cast<int>(inicio) + 1});
+
+            anterior = TipoToken::NUMERO;
+            ultimoValor = valor;
+            ultimaPosicion = posActual;
+            hayAnterior = true;
             continue;
         }
 
         if (esOperador(c)) {
-            tokens.push_back({TipoToken::OPERADOR, string(1, c), static_cast<int>(i) + 1});
+            if (!hayAnterior) {
+                resultado.valido = false;
+                resultado.tipoError = "Operador al inicio de la expresion";
+                resultado.simboloEncontrado = string(1, c);
+                resultado.simboloEsperado = "un numero o un simbolo de apertura";
+                resultado.posicion = posActual;
+                return resultado;
+            }
+            if (anterior == TipoToken::OPERADOR || anterior == TipoToken::APERTURA) {
+                resultado.valido = false;
+                resultado.tipoError = (anterior == TipoToken::OPERADOR)
+                    ? "Dos operadores consecutivos"
+                    : "Operador inmediatamente despues de un simbolo de apertura";
+                resultado.simboloEncontrado = string(1, c);
+                resultado.simboloEsperado = "un numero o un simbolo de apertura";
+                resultado.posicion = posActual;
+                return resultado;
+            }
+
+            anterior = TipoToken::OPERADOR;
+            ultimoValor = string(1, c);
+            ultimaPosicion = posActual;
+            hayAnterior = true;
             ++i;
             continue;
         }
 
         if (esApertura(c)) {
-            tokens.push_back({TipoToken::APERTURA, string(1, c), static_cast<int>(i) + 1});
+            // numero+apertura o cierre+apertura: multiplicacion implicita,
+            // siempre valido (no se necesita chequeo aqui).
+            anterior = TipoToken::APERTURA;
+            ultimoValor = string(1, c);
+            ultimaPosicion = posActual;
+            hayAnterior = true;
             ++i;
             continue;
         }
 
         if (esCierre(c)) {
-            tokens.push_back({TipoToken::CIERRE, string(1, c), static_cast<int>(i) + 1});
+            if (!hayAnterior || anterior == TipoToken::OPERADOR || anterior == TipoToken::APERTURA) {
+                resultado.valido = false;
+                resultado.tipoError = "Grupo vacio o cierre inesperado";
+                resultado.simboloEncontrado = string(1, c);
+                resultado.simboloEsperado = "un numero o un simbolo de apertura";
+                resultado.posicion = posActual;
+                return resultado;
+            }
+
+            anterior = TipoToken::CIERRE;
+            ultimoValor = string(1, c);
+            ultimaPosicion = posActual;
+            hayAnterior = true;
             ++i;
             continue;
         }
 
-        // Caracter desconocido: ya debió haber sido detectado en el nivel 1,
-        // pero lo saltamos para no romper el tokenizador.
+        // Caracter desconocido: ya debio haber sido detectado en el nivel 1.
         ++i;
     }
 
-    return tokens;
-}
-
-// ============================================================
-//  NIVEL 3: VALIDACIÓN DE LA ESTRUCTURA MATEMÁTICA
-// ============================================================
-// Recorre la secuencia de tokens verificando que el "tipo anterior"
-// y el "tipo actual" formen una combinación válida. Esto detecta:
-//   - dos operadores consecutivos
-//   - un operador al inicio
-//   - un operador al final
-//   - dos números consecutivos sin operador
-// y de paso también combinaciones igual de inválidas como ")3".
-// Excepción: un cierre seguido de una apertura, ej. "(12)(21)", se
-// acepta como multiplicación implícita entre grupos (equivale a "*").
-
-ResultadoValidacion validarEstructura(const string& expresion) {
-    ResultadoValidacion resultado;
-    vector<Token> tokens = tokenizar(expresion);
-
-    if (tokens.empty()) {
+    if (!hayAnterior) {
         resultado.valido = false;
         resultado.tipoError = "Estructura invalida";
         resultado.simboloEncontrado = "(expresion vacia)";
@@ -268,97 +316,13 @@ ResultadoValidacion validarEstructura(const string& expresion) {
         return resultado;
     }
 
-    // "anterior" indica qué tipo de token puede terminar la expresión
-    // o preceder al siguiente token: NUMERO_O_CIERRE, OPERADOR, APERTURA, NINGUNO(inicio)
-    TipoToken* anterior = nullptr;
-    TipoToken anteriorValor;
-    bool hayAnterior = false;
-
-    for (size_t idx = 0; idx < tokens.size(); ++idx) {
-        const Token& t = tokens[idx];
-
-        if (!hayAnterior) {
-            // Primer token de la expresión.
-            if (t.tipo == TipoToken::OPERADOR) {
-                resultado.valido = false;
-                resultado.tipoError = "Operador al inicio de la expresion";
-                resultado.simboloEncontrado = t.valor;
-                resultado.simboloEsperado = "un numero o un simbolo de apertura";
-                resultado.posicion = t.posicion;
-                return resultado;
-            }
-            if (t.tipo == TipoToken::CIERRE) {
-                resultado.valido = false;
-                resultado.tipoError = "Estructura invalida";
-                resultado.simboloEncontrado = t.valor;
-                resultado.simboloEsperado = "un numero o un simbolo de apertura";
-                resultado.posicion = t.posicion;
-                return resultado;
-            }
-        } else {
-            TipoToken prev = anteriorValor;
-
-            if (prev == TipoToken::NUMERO || prev == TipoToken::CIERRE) {
-                // Después de un número o un cierre puede venir un
-                // operador, un cierre, o (multiplicación implícita)
-                // un número o una apertura.
-                if (t.tipo == TipoToken::NUMERO) {
-                    if (prev == TipoToken::CIERRE) {
-                        // Multiplicacion implicita cierre+numero: ")3" es
-                        // valido y equivale a ")*3", ej: (12)3 == (12)*3
-                    } else {
-                        // prev == NUMERO: dos numeros pegados sin operador
-                        // (aqui NO aplica multiplicacion implicita, ya que
-                        // "25 8" no es una notacion matematica valida).
-                        resultado.valido = false;
-                        resultado.tipoError = "Dos numeros consecutivos sin operador";
-                        resultado.simboloEncontrado = t.valor;
-                        resultado.simboloEsperado = "un operador (+ - * /)";
-                        resultado.posicion = t.posicion;
-                        return resultado;
-                    }
-                }
-                if (t.tipo == TipoToken::APERTURA) {
-                    // Multiplicacion implicita entre numero+apertura o
-                    // cierre+apertura: "12(3)" y "(12)(21)" son validos y
-                    // equivalen a "12*(3)" y "(12)*(21)".
-                }
-            } else {
-                // prev == OPERADOR o prev == APERTURA
-                if (t.tipo == TipoToken::OPERADOR) {
-                    resultado.valido = false;
-                    resultado.tipoError = (prev == TipoToken::OPERADOR)
-                        ? "Dos operadores consecutivos"
-                        : "Operador inmediatamente despues de un simbolo de apertura";
-                    resultado.simboloEncontrado = t.valor;
-                    resultado.simboloEsperado = "un numero o un simbolo de apertura";
-                    resultado.posicion = t.posicion;
-                    return resultado;
-                }
-                if (t.tipo == TipoToken::CIERRE) {
-                    resultado.valido = false;
-                    resultado.tipoError = "Grupo vacio o cierre inesperado";
-                    resultado.simboloEncontrado = t.valor;
-                    resultado.simboloEsperado = "un numero o un simbolo de apertura";
-                    resultado.posicion = t.posicion;
-                    return resultado;
-                }
-            }
-        }
-
-        anteriorValor = t.tipo;
-        hayAnterior = true;
-        (void)anterior;
-    }
-
-    // El último token no puede ser un operador ni una apertura sin cerrar
-    // (el balanceo ya se validó en el nivel 2, así que solo revisamos operador).
-    if (anteriorValor == TipoToken::OPERADOR) {
+    // La expresion no puede terminar en un operador.
+    if (anterior == TipoToken::OPERADOR) {
         resultado.valido = false;
         resultado.tipoError = "Operador al final de la expresion";
-        resultado.simboloEncontrado = tokens.back().valor;
+        resultado.simboloEncontrado = ultimoValor;
         resultado.simboloEsperado = "un numero o un simbolo de apertura";
-        resultado.posicion = tokens.back().posicion;
+        resultado.posicion = ultimaPosicion;
         return resultado;
     }
 
@@ -366,8 +330,9 @@ ResultadoValidacion validarEstructura(const string& expresion) {
     return resultado;
 }
 
+
 // ============================================================
-//  PRESENTACIÓN DE RESULTADOS
+//  PRESENTACION DE RESULTADOS
 // ============================================================
 
 void mostrarResultado(const string& expresion,
@@ -405,8 +370,8 @@ void mostrarResultado(const string& expresion,
     cout << "\n";
 }
 
-// Ejecuta las tres validaciones en cascada sobre una expresión,
-// deteniéndose en el primer nivel que falle (tal como pide el flujo del taller).
+// Ejecuta las tres validaciones en cascada sobre una expresion,
+// deteniendose en el primer nivel que falle (tal como pide el flujo del taller).
 void procesarExpresion(const string& expresion) {
     ResultadoValidacion caracteres = validarCaracteres(expresion);
     if (!caracteres.valido) {
